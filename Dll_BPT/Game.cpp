@@ -9,6 +9,12 @@ int menu() {
 
 		if (rsCompString((char*)"/nohpoff"))
 			bNoHp = false;
+
+		if (rsCompString((char*)"/autoboton"))
+			bAutoBot = true;
+
+		if (rsCompString((char*)"/autobotoff"))
+			bAutoBot = false;
 	}
 
 	return 0;
