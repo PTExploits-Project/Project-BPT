@@ -26,6 +26,7 @@ void findMob() {
                 if (abs(x) < 60000 && abs(z) < 60000) {
                     if (bAutoBot) {
                         while (
+                            bAutoBot &&
                             read(chrOtherPlayer + 0x39C4, 4) == 1 &&
                             read(chrOtherPlayer + 0x47A0, 4) != 0x120
                             )

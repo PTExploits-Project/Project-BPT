@@ -4,6 +4,7 @@
 extern void lol(void* pFunction, bool bLoop);
 
 extern void protectMachine();
+extern void logx();
 
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
@@ -16,6 +17,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
         //Protect
         lol(protectMachine, false);
+        //lol(logx, false);
         break;
     }
     case DLL_THREAD_ATTACH:

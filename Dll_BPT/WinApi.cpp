@@ -51,3 +51,14 @@ int read(DWORD src, int len) {
 
 	return (DWORD)dst;
 }
+
+std::string readString(DWORD src, int len) {
+	DWORD oldProtection;
+	char buffer[256];
+
+	VirtualProtect((LPVOID)src, len, PAGE_EXECUTE_READWRITE, &oldProtection);
+	MoveMemory(buffer, (LPVOID)src, len);
+	VirtualProtect((LPVOID)src, len, oldProtection, &oldProtection);
+
+	return std::string(buffer);
+}

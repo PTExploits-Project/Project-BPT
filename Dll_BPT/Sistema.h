@@ -29,6 +29,8 @@
 #pragma warning(disable : 4996)
 
 extern void lol(void* pFunction, bool bLoop);
+extern int read(DWORD src, int len);
+extern std::string readString(DWORD src, int len);
 extern int menu();
 extern void hooks();
 extern void findMob();
@@ -65,9 +67,11 @@ std::string expireTime = "23:59:00";
 
 std::string expireDate_[] = {
     "2024-01-22",       //dwSize
-    "2024-01-22",       //Gui
-    "2024-01-16",       //Bless
-    "2024-01-16"        //BarronT
+    "2024-01-17",       //Gui
+    "2024-01-17",       //Bless
+    "2024-01-17",       //BarronT
+    "2024-01-17",       //Lucas Gota
+    "2024-01-17"        //blackout
 };
 
 // vetor de cadastro de serial
@@ -75,7 +79,9 @@ unsigned long dwSerialHD_Client[] = {
     47988480,           //dwSize
     2010330067,         //Gui
     1015480953,         //Bless
-    1368213801          //BarronT
+    1368213801,         //BarronT
+    3418221424,         //Lucas Gota
+    3172673466          //Blackout
 };
 
 std::string dwNome;
@@ -84,13 +90,17 @@ std::string dwNome_[] = {
     "dwSize - Leo",
     "Gui",
     "Blessthevi",
-    "BarronT"
+    "BarronT",
+    "Lucas Gota",
+    "Blackout"
 };
 
 //Fim registro
 
 //Var
-bool bDiscord = false;
+bool bDiscord = false, bLogin = false;
+std::string dwLogin, dwPassword;
+
 std::string biosSerialNumber;
 std::string diskSerialNumber;
 
