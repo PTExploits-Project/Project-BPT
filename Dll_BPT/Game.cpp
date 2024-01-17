@@ -55,6 +55,12 @@ int menu() {
 		if (rsCompString((char*)"/nohpoff"))
 			bNoHp = false;
 
+		if (rsCompString((char*)"/nompon"))
+			bNoMp = true;
+
+		if (rsCompString((char*)"/nompoff"))
+			bNoMp = false;
+
 		if (rsCompString((char*)"/autoboton"))
 			bAutoBot = true;
 

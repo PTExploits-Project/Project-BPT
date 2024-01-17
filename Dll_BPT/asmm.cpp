@@ -5,12 +5,25 @@
 __declspec(naked) void travaHp(short iVar) {
 	__asm {
 		cmp byte ptr ds:[bNoHp], 0
-		jne trava
+		jne ctravaHp
 		mov eax, 0x4E1C0C
 		jmp eax
 
-		trava:
+		ctravaHp:
 		ret
+	}
+}
+
+int jmpSetMana = 0x004E1C69;
+
+__declspec(naked) void travaMp() {
+	__asm {
+		cmp byte ptr ds: [bNoMp], 0
+		jne ctravaMp
+		jmp [jmpSetMana]
+
+		ctravaMp:
+		retn
 	}
 }
 

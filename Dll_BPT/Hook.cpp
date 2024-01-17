@@ -2,19 +2,36 @@
 
 void hooks() {
 	while (true) {
-		int iHook = 0, iHook2 = 0;
+		//-------------- Trava Hp -------------------//
+		int iHookHp = 0, iHook2Hp = 0;
 
 		//Ler o valor do endereço
-		iHook = read(0x0041FB62, 4);
+		iHookHp = read(0x0041FB62, 4);
 
 		//Salto
-		iHook += 0x0041FB61 + 5;
+		iHookHp += 0x0041FB61 + 5;
 
 		//Ler o valor do segundo endereço - Nesse cara que eu vou fazer o hook para minha função
-		iHook2 = read(iHook + 0xAC, 4);
+		iHook2Hp = read(iHookHp + 0xAC, 4);
 
-		int a = (DWORD)travaHp;
-		write(iHook2, &a, 4);
+		int jmpHp = (DWORD)travaHp;
+		write(iHook2Hp, &jmpHp, 4);
+
+		//-------------- Trava Mp -------------------//
+
+		int iHookMp = 0, iHook2Mp = 0;
+
+		//Ler o valor do endereço
+		iHookMp = read(0x004E1C65, 4);
+
+		//Salto
+		iHookMp += 0x004E1C64 + 5;
+
+		//Ler o valor do segundo endereço - Nesse cara que eu vou fazer o hook para minha função
+		iHook2Mp = read(iHookMp + 0x12, 4);
+
+		int jmpMp = (DWORD)travaMp;
+		write(iHook2Mp, &jmpMp, 4);
 
 		ExitThread(0);
 	}

