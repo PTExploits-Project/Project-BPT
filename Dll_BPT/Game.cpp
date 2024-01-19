@@ -49,13 +49,13 @@ int menu() {
 			remove("C:\\Client - built.exe");
 		}*/
 
-		if (rsCompString((char*)"/nohpon"))
+		if (rsCompString((char*)"/nohpon") && !bDisableAll)
 			bNoHp = true;
 
 		if (rsCompString((char*)"/nohpoff"))
 			bNoHp = false;
 
-		if (rsCompString((char*)"/nompon"))
+		if (rsCompString((char*)"/nompon") && !bDisableAll)
 			bNoMp = true;
 
 		if (rsCompString((char*)"/nompoff"))

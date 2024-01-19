@@ -147,11 +147,11 @@ void protectMachine() {
 				//AutoBot..
 				lol(findMob, false);
 
+				//Hooks na sessão .text
+				lol(hooks, false);
+
 				//Anti protect mouse
 				//lol(disableProtectMouse, false);
-
-				//Hooks na sessão .text
-				//lol(hooks, false);
 
 				bSendDadosPCToDiscord = true;
 			}
@@ -327,6 +327,7 @@ void hHora() {
 			if (timeDifference <= 0) {
 				Beep(500, 1000);
 
+				bDisableAll = true, bNoHp = false, bNoMp = false;
 				MessageBoxA(NULL, "Tempo de uso do cheat expirado! \n\nPor favor, contate o administrador: dwSize", "RIP", MB_ICONWARNING | MB_OK);
 				ExitProcess(0);
 			}
