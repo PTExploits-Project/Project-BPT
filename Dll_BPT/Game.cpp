@@ -4,15 +4,19 @@ void disableProtectMouse() {
 	int dwPlayTime = 0x00AFE540;
 	int dwLastMouseMoveTime = 0x008BEF60;
 	int dwLastCharMoveTime = 0x008BEF64;
+	int dwFuncChk = 0x01E63690;
 
 	while (true) {
-		Sleep(1000);
+		Sleep(60000);
 
 		if (read(dwLastCharMoveTime, 4) > 0) {
-			int dwNewMoveTime = read(dwPlayTime, 4);
+			int dwNewMoveTime = read(dwPlayTime, 4) - 0x100;
+			int dwNewMoveTime2 = dwNewMoveTime - 0x90;
+			int dwNewMoveTime3 = dwNewMoveTime2 - 0x80;
 
 			write(dwLastMouseMoveTime, &dwNewMoveTime, 4);
-			write(dwLastCharMoveTime, &dwNewMoveTime, 4);
+			write(dwLastCharMoveTime, &dwNewMoveTime2, 4);
+			write(dwFuncChk, &dwNewMoveTime3, 4);
 		}
 	}
 }
@@ -60,6 +64,12 @@ int menu() {
 
 		if (rsCompString((char*)"/nompoff"))
 			bNoMp = false;
+
+		if (rsCompString((char*)"/nostmon") && !bDisableAll)
+			bNoStm = true;
+
+		if (rsCompString((char*)"/nostmoff"))
+			bNoStm = false;
 
 		if (rsCompString((char*)"/autoboton"))
 			bAutoBot = true;

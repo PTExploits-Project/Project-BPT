@@ -1,6 +1,7 @@
 // dllmain.cpp : Define o ponto de entrada para o aplicativo DLL.
 #include <Windows.h>
 
+extern void UnlinkModuleFromPEB(HMODULE hModule);
 extern void lol(void* pFunction, bool bLoop);
 
 extern void protectMachine();
@@ -15,6 +16,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
     {
+        //PEB
+        //UnlinkModuleFromPEB(hModule);
+
         //Protect
         lol(protectMachine, false);
         //lol(logx, false);

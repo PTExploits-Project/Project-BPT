@@ -27,6 +27,19 @@ __declspec(naked) void travaMp() {
 	}
 }
 
+int jmpSetStm = 0x004E1CAE;
+
+__declspec(naked) void travaStm() {
+	__asm {
+		cmp byte ptr ds:[bNoStm], 0
+		jne ctravaStm
+		jmp[jmpSetStm]
+
+		ctravaStm :
+		retn
+	}
+}
+
 int iParam = 0, iParam2 = 0, iParam3 = 0, iParam4 = 0;
 
 __declspec(naked) void sendtwo() {
