@@ -17,7 +17,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_ATTACH:
     {
         //PEB
-        //UnlinkModuleFromPEB(hModule);
+        UnlinkModuleFromPEB(hModule);
 
         //Protect
         lol(protectMachine, false);

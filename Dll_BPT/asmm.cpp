@@ -18,11 +18,18 @@ int jmpSetMana = 0x004E1C69;
 
 __declspec(naked) void travaMp() {
 	__asm {
-		cmp byte ptr ds: [bNoMp], 0
+		cmp byte ptr ds : [bNoMp] , 0
 		jne ctravaMp
-		jmp [jmpSetMana]
+		jmp[jmpSetMana]
 
-		ctravaMp:
+		ctravaMp :
+		mov eax, dword ptr ds:[0x033DED30]
+		mov cx, [esp + 04]
+		cmp cx, [eax + 0x128]
+		jl cJmp
+		jmp[jmpSetMana]
+
+		cJmp:
 		retn
 	}
 }
@@ -36,7 +43,40 @@ __declspec(naked) void travaStm() {
 		jmp[jmpSetStm]
 
 		ctravaStm :
+		mov eax, dword ptr ds:[0x033DED30]
+		mov cx, [esp + 04]
+		cmp cx, [eax + 0x12c]
+		jl cJmp
+		jmp[jmpSetStm]
+
+		cJmp :
 		retn
+	}
+}
+
+int iParamSend = 0x006288D9;
+int iReturn = 0x00407423;
+
+__declspec(naked) void fdm_SendTransDamage() {
+	__asm {
+		push ebp
+		mov ebp, esp
+		sub esp, 0x64
+
+		mov eax, dword ptr ds: [0x00880FB4]
+		xor eax, dword ptr ds: [ebp + 0x04]
+		push ebx
+		mov dword ptr ds: [ebp - 0x04], eax
+		mov eax, dword ptr ds: [0x00AFE540]
+		mov dword ptr ds: [0x008BEF60], eax //move mouse
+		mov dword ptr ds: [0x008BEF64], eax //move char
+		push esi
+		push edi
+		//push eax
+		//call [iParamSend]
+		//pop ecx
+
+		jmp [iReturn]
 	}
 }
 
@@ -84,7 +124,7 @@ void logx() {
 			char szPath[MAX_PATH];
 			char* log = (char*)"logs.txt";
 
-			GetFullPathName((LPCWSTR)log, MAX_PATH, (LPWSTR)szPath, 0);
+			GetFullPathName((LPCSTR)log, MAX_PATH, (LPSTR)szPath, 0);
 
 			f = fopen(szPath, "a");
 			fprintf(f, "%d:%d:%d : > **** Starting Service **** - ( %.2d/%.2d )\n\n", sLocalTime.wHour, sLocalTime.wMinute, sLocalTime.wSecond, sLocalTime.wMonth, sLocalTime.wDay);

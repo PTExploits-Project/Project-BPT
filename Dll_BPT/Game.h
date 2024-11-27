@@ -1,4 +1,5 @@
 #include "WinApi.h"
+#include "hItem.h"
 
 extern bool bDisableAll;
 
@@ -7,5 +8,4 @@ bNoMp = false,
 bNoStm = false,
 bAutoBot = false;
 
-void disableProtectMouse();
 int menu();

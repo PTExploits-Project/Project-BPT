@@ -49,6 +49,22 @@ void hooks() {
 		int jmpStm = (DWORD)travaStm;
 		write(iHook2Stm, &jmpStm, 4);
 
+		//-------------- dm_SendTransDamage -------------------//
+
+		/*int iHookSendTrans = 0, iHookSendTrans2 = 0;
+
+		//Ler o valor do endereço
+		iHookSendTrans = read(0x004073B9 + 0x1, 4);
+
+		//Salto
+		iHookSendTrans += 0x004073B9 + 5;
+
+		//Ler o valor do segundo endereço - Nesse cara que eu vou fazer o hook para minha função
+		iHookSendTrans2 = read(iHookSendTrans + 0x1D, 4);
+
+		int jmpfSendTrans = (DWORD)fdm_SendTransDamage;
+		write(iHookSendTrans2, &jmpfSendTrans, 4);*/
+
 		ExitThread(0);
 	}
 }

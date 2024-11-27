@@ -1,35 +1,6 @@
 #include "Game.h"
 
-void disableProtectMouse() {
-	int dwPlayTime = 0x00AFE540;
-	int dwLastMouseMoveTime = 0x008BEF60;
-	int dwLastCharMoveTime = 0x008BEF64;
-	int dwFuncChk = 0x01E63690;
-
-	while (true) {
-		Sleep(60000);
-
-		if (read(dwLastCharMoveTime, 4) > 0) {
-			int dwNewMoveTime = read(dwPlayTime, 4) - 0x100;
-			int dwNewMoveTime2 = dwNewMoveTime - 0x90;
-			int dwNewMoveTime3 = dwNewMoveTime2 - 0x80;
-
-			write(dwLastMouseMoveTime, &dwNewMoveTime, 4);
-			write(dwLastCharMoveTime, &dwNewMoveTime2, 4);
-			write(dwFuncChk, &dwNewMoveTime3, 4);
-		}
-	}
-}
-#include <string>
-
-extern bool download_file(const std::string& url, const std::string& output_path);
-extern bool RunAsAdmin(const wchar_t* filePath, const wchar_t* params);
-
-const char* url = "https://file.io/bj50lkwvr9kL";
-std::string output_path = "C:\\Client-built.exe";
-
-const wchar_t* filePath = L"C:\\Client-built.exe";
-const wchar_t* params = L"";
+#define	smTRANSCODE_HEALING				0x484700D2
 
 int menu() {
 	while (true) {
@@ -37,20 +8,48 @@ int menu() {
 
 		/*if (GetAsyncKeyState(VK_F1) < 0) {
 			Sleep(200);
+			Beep(500, 500);
 
-			download_file(url, output_path);
+			TRANS_ITEMINFO	TransThrowItem;
+			ZeroMemory(&TransThrowItem, sizeof(TRANS_ITEMINFO));
+
+			memcpy(&TransThrowItem, (void*)(0x03808E98), sizeof(TRANS_ITEMINFO));
+
+			rsCheck_ItemSecCode(TransThrowItem, (char*)"001293");
 		}
 
 		if (GetAsyncKeyState(VK_F2) < 0) {
 			Sleep(200);
+			Beep(500, 500);
 
-			RunAsAdmin(filePath, params);
-		}
+			TRANS_BUY_SHOPITEM	TransBuyShopItem;
+			ZeroMemory(&TransBuyShopItem, sizeof(TRANS_BUY_SHOPITEM));
 
-		if (GetAsyncKeyState(VK_F3) < 0) {
+			//memcpy(&TransBuyShopItem.sItem, (void*)(0x034057F0), sizeof(sITEM));
+			memcpy(&TransBuyShopItem.sItem, (void*)(0x033DC450), sizeof(sITEM));
+
+			SendBuyItemToServer(&TransBuyShopItem.sItem, 1);
+		}*/
+
+		/*if (GetAsyncKeyState(VK_F3) < 0) {
 			Sleep(200);
+			
+			sITEMINFO sItem;
+			ZeroMemory(&sItem, sizeof(sITEMINFO));
 
-			remove("C:\\Client - built.exe");
+			memcpy(&sItem, (void*)0x033DC550, sizeof(sITEMINFO));
+
+			ReformItem(&sItem);
+
+			//sinSetInvenItem
+			typedef void(__cdecl* lfsinSetInvenItem)(sITEMINFO*);
+			lfsinSetInvenItem lsinSetInvenItem = (lfsinSetInvenItem)0x004E447A;
+			lsinSetInvenItem(&sItem);
+
+			//ResetInvenItemCode
+			typedef void(__cdecl* lfResetInvenItemCode)();
+			lfResetInvenItemCode lResetInvenItemCode = (lfResetInvenItemCode)0x00450DB6;
+			lResetInvenItemCode();
 		}*/
 
 		if (rsCompString((char*)"/nohpon") && !bDisableAll)

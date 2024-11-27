@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <TlHelp32.h>
 #include <iostream>
 #include <sstream>
 #include <winhttp.h>
@@ -67,7 +68,7 @@ void sendDiscordWebhook(std::string szMessage);
 //Registro
 bool bTime = false, bGetTime = false;
 
-std::string expireDate = "2024-01-13";
+std::string expireDate = "2024-02-14";
 std::string expireTime = "23:59:00";
 std::string dwNome;
 

