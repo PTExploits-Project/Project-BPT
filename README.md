@@ -1,0 +1,1 @@
+The posted source code is intended exclusively for educational purposes, providing insights into the game's functionality and the use of C++ in the project. I emphasize that I am not responsible for any misuse or improper application of the material provided
